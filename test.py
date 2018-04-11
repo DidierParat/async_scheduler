@@ -1,56 +1,55 @@
-import logging
+import time
+import unittest
 
 from async_scheduler import AsyncScheduler
-
-foo1_call_counter = 0
-foo2_call_counter = 0
-foo3_call_counter = 0
+from mock import MagicMock
 
 
-def foo1():
-    global foo1_call_counter
-    foo1_call_counter += 1
+class TestAsyncScheduler(unittest.TestCase):
 
+    def test_run(self):
+        async_scheduler = AsyncScheduler(2)
+        start_time = time.time()
+        async_scheduler.run()
+        end_time = time.time()
+        run_time = end_time - start_time
+        self.assertAlmostEqual(run_time, 2, 2)
 
-def foo2():
-    global foo2_call_counter
-    foo2_call_counter += 1
+    def test_function_without_parameter(self):
+        async_scheduler = AsyncScheduler(1)
+        foo = MagicMock()
+        async_scheduler.schedule(1, foo)
+        async_scheduler.run()
+        foo.assert_called_once()
 
+    def test_function_with_one_parameter(self):
+        async_scheduler = AsyncScheduler(1)
+        foo = MagicMock()
+        foo_param = 'param'
+        async_scheduler.schedule(1, foo, foo_param)
+        async_scheduler.run()
+        foo.assert_called_once()
+        foo.assert_called_with(foo_param)
 
-def foo3():
-    global foo3_call_counter
-    foo3_call_counter += 1
-    raise
+    def test_function_with_several_parameters(self):
+        async_scheduler = AsyncScheduler(1)
+        foo = MagicMock()
+        foo_param1 = 'param1'
+        foo_param2 = 'param2'
+        async_scheduler.schedule(1, foo, foo_param1, foo_param2)
+        async_scheduler.run()
+        foo.assert_called_once()
+        foo.assert_called_with(foo_param1, foo_param2)
 
-
-def main():
-    """ starting point
-    """
-    logging.basicConfig(
-        filename='test.log',
-        filemode='w',
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s')
-    async_scheduler = AsyncScheduler(11)
-    async_scheduler.schedule(2, foo1)
-    async_scheduler.schedule(3, foo2)
-    async_scheduler.schedule(7, foo3)
-    async_scheduler.run()
-    test_fail = False
-    if foo1_call_counter != 5:
-        print "Unexpected number of calls for foo1!"
-        print "Expected 5, got {0}".format(foo1_call_counter)
-        test_fail = True
-    if foo2_call_counter != 3:
-        print "Unexpected number of calls for foo2!"
-        print "Expected 5, got {0}".format(foo2_call_counter)
-        test_fail = True
-    if foo3_call_counter != 1:
-        print "Unexpected number of calls for foo3!"
-        print "Expected 5, got {0}".format(foo3_call_counter)
-        test_fail = True
-    if not test_fail:
-        print "All tests passed !"
+    def test_several_functions_scheduled(self):
+        async_scheduler = AsyncScheduler(1)
+        foo1 = MagicMock()
+        foo2 = MagicMock()
+        async_scheduler.schedule(1, foo1)
+        async_scheduler.schedule(1, foo2)
+        async_scheduler.run()
+        foo1.assert_called_once()
+        foo2.assert_called_once()
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
